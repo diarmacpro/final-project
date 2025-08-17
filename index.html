@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lofe-Coffee Chatbot</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    
+    <style>
+        .chat-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .message-bubble {
+            max-width: 85%;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+        
+        .message-bubble strong {
+            font-weight: 600;
+        }
+        
+        .message-bubble .whitespace-pre-line {
+            white-space: pre-line;
+        }
+        
+        .typing-indicator {
+            display: none;
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            background-color: #e5e7eb;
+            border-radius: 50%;
+            width: 8px;
+            height: 8px;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: scale(0.8); opacity: 0.5; }
+            30% { transform: scale(1); opacity: 1; }
+        }
+
+        .order-item {
+            transition: all 0.3s ease;
+        }
+
+        .order-item:hover {
+            background-color: #fef3cd;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 to-orange-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-amber-800 text-white py-4 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-center">
+                <i class="bi bi-cup-hot text-3xl mr-3"></i>
+                <h1 class="text-2xl font-bold">Lofe-Coffee</h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Welcome Section -->
+        <div id="welcomeSection" class="text-center mb-8">
+            <div class="bg-white rounded-lg shadow-xl p-8 mx-auto max-w-md">
+                <i class="bi bi-cup-hot-fill text-6xl text-amber-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Selamat Datang di Lofe-Coffee</h2>
+                <p class="text-gray-600 mb-6">Mulai pesanan Anda dengan menekan tombol di bawah ini</p>
+                <button id="newOrderBtn" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                    <i class="bi bi-plus-circle mr-2"></i>
+                    Pesanan Baru
+                </button>
+                
+                <!-- Resume Session Button (if previous session exists) -->
+                <div id="resumeSessionContainer" class="mt-4 hidden">
+                    <p class="text-sm text-gray-600 mb-2">Atau lanjutkan sesi sebelumnya:</p>
+                    <button id="resumeSessionBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                        <i class="bi bi-arrow-clockwise mr-2"></i>
+                        Lanjutkan Sesi
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Section -->
+        <div id="chatSection" class="hidden">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl mx-auto">
+                <!-- Chat Header -->
+                <div class="bg-amber-600 text-white p-4 rounded-t-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3">
+                                <i class="bi bi-person-fill text-amber-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold">Elsa - Kasir Lofe-Coffee</h3>
+                                <p class="text-sm opacity-90">Online</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="clearTransactionBtn" class="text-white hover:bg-amber-700 p-2 rounded-full transition duration-300" title="Hapus Transaksi">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <button id="backBtn" class="text-white hover:bg-amber-700 p-2 rounded-full transition duration-300">
+                                <i class="bi bi-arrow-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div id="chatMessages" class="chat-container p-4 space-y-4 bg-gray-50">
+                    <!-- Messages will be displayed here -->
+                </div>
+
+                <!-- Typing Indicator -->
+                <div id="typingIndicator" class="typing-indicator px-4 pb-2">
+                    <div class="flex items-center">
+                        <div class="bg-gray-200 rounded-lg px-3 py-2 mr-2">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <small class="text-gray-500">Elsa sedang mengetik...</small>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="border-t p-4 bg-white rounded-b-lg">
+                    <div class="flex items-center space-x-2">
+                        <input 
+                            type="text" 
+                            id="messageInput" 
+                            placeholder="Ketik pesan Anda..." 
+                            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        />
+                        <button 
+                            id="sendBtn" 
+                            class="bg-amber-600 hover:bg-amber-700 text-white p-2 rounded-lg transition duration-300 disabled:bg-gray-400"
+                        >
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div id="orderSummary" class="bg-white rounded-lg shadow-xl max-w-2xl mx-auto mt-6 p-4">
+                <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                    <i class="bi bi-receipt mr-2"></i>
+                    Ringkasan Pesanan
+                </h4>
+                <div id="orderDetails" class="text-sm text-gray-600">
+                    <p>ID Sesi: <span id="sessionId" class="font-mono text-xs"></span></p>
+                    <p class="mt-2">Belum ada item dalam pesanan</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let sessionUuid = null;
+        let chatHistory = [];
+        let currentTransactionId = null;
+        let customerData = null;
+        let currentOrderTotal = 0;
+        let orderItems = [];
+        
+        // API endpoints and credentials
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        const GEMINI_API_KEY = 'AIzaSyAPy5npNkxcLckuyq-b2fx_UBf_gvkC9jo';
+        const SUPABASE_URL = 'https://ekdynqagposybypnqqgn.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrZHlucWFncG9zeWJ5cG5xcWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MDgzNDEsImV4cCI6MjA3MDk4NDM0MX0.KJlhdeMOGD4Y9L3BD5ej8QfosD-uidenDhwj4I98Hpw';
+        const SUPABASE_BASE_URL = `${SUPABASE_URL}/functions/v1`;
+        
+        // Session Storage Keys
+        const SESSION_KEYS = {
+            CURRENT_SESSION: 'lofe_current_session',
+            CURRENT_TRANSACTION: 'lofe_current_transaction',
+            CUSTOMER_DATA: 'lofe_customer_data',
+            CHAT_HISTORY: 'lofe_chat_history',
+            ORDER_ITEMS: 'lofe_order_items',
+            ORDER_TOTAL: 'lofe_order_total'
+        };
+        
+        // Utility functions
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        function saveToSession(key, value) {
+            try {
+                sessionStorage.setItem(key, JSON.stringify(value));
+                console.log(`Saved to session: ${key}`, value);
+            } catch (error) {
+                console.error('Error saving to session storage:', error);
+            }
+        }
+        
+        function getFromSession(key) {
+            try {
+                const item = sessionStorage.getItem(key);
+                const parsed = item ? JSON.parse(item) : null;
+                console.log(`Retrieved from session: ${key}`, parsed);
+                return parsed;
+            } catch (error) {
+                console.error('Error getting from session storage:', error);
+                return null;
+            }
+        }
+        
+        function clearSession() {
+            Object.values(SESSION_KEYS).forEach(key => {
+                sessionStorage.removeItem(key);
+            });
+            console.log('Session storage cleared');
+        }
+        
+        // Load session data
+        function loadSessionData() {
+            sessionUuid = getFromSession(SESSION_KEYS.CURRENT_SESSION);
+            currentTransactionId = getFromSession(SESSION_KEYS.CURRENT_TRANSACTION);
+            customerData = getFromSession(SESSION_KEYS.CUSTOMER_DATA);
+            chatHistory = getFromSession(SESSION_KEYS.CHAT_HISTORY) || [];
+            orderItems = getFromSession(SESSION_KEYS.ORDER_ITEMS) || [];
+            currentOrderTotal = getFromSession(SESSION_KEYS.ORDER_TOTAL) || 0;
+            
+            console.log('Session data loaded:', {
+                sessionUuid,
+                currentTransactionId,
+                customerData,
+                chatHistory: chatHistory.length,
+                orderItems: orderItems.length,
+                currentOrderTotal
+            });
+        }
+        
+        // Save session data
+        function saveSessionData() {
+            saveToSession(SESSION_KEYS.CURRENT_SESSION, sessionUuid);
+            saveToSession(SESSION_KEYS.CURRENT_TRANSACTION, currentTransactionId);
+            saveToSession(SESSION_KEYS.CUSTOMER_DATA, customerData);
+            saveToSession(SESSION_KEYS.CHAT_HISTORY, chatHistory);
+            saveToSession(SESSION_KEYS.ORDER_ITEMS, orderItems);
+            saveToSession(SESSION_KEYS.ORDER_TOTAL, currentOrderTotal);
+        }
+        
+        // Check if there's a previous session
+        function hasPreviousSession() {
+            return getFromSession(SESSION_KEYS.CURRENT_SESSION) !== null;
+        }
+        
+        // Chat functions
+        function addMessage(role, content, isTyping = false) {
+            const messagesContainer = $('#chatMessages');
+            const messageClass = role === 'user' ? 'ml-auto bg-amber-600 text-white' : 'mr-auto bg-gray-200 text-gray-800';
+            const iconClass = role === 'user' ? 'bi-person-fill' : 'bi-robot';
+            
+            // Format content for better display
+            const formattedContent = formatMessageContent(content);
+            
+            const messageHtml = `
+                <div class="flex ${role === 'user' ? 'justify-end' : 'justify-start'} items-start space-x-2">
+                    ${role === 'model' ? `<div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="bi ${iconClass} text-white text-sm"></i></div>` : ''}
+                    <div class="message-bubble ${messageClass} rounded-lg px-4 py-3 shadow max-w-md">
+                        <div class="text-sm whitespace-pre-line">${formattedContent}</div>
+                        <small class="text-xs opacity-75">${new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}</small>
+                    </div>
+                    ${role === 'user' ? `<div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="bi ${iconClass} text-white text-sm"></i></div>` : ''}
+                </div>
+            `;
+            
+            messagesContainer.append(messageHtml);
+            messagesContainer.scrollTop(messagesContainer[0].scrollHeight);
+            
+            // Save to chat history
+            chatHistory.push({ role, content });
+            saveSessionData();
+        }
+        
+        function formatMessageContent(content) {
+            // Convert markdown-style formatting to HTML
+            let formatted = content
+                // Convert **bold** to <strong>
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // Convert bullet points to proper list items
+                .replace(/^\* (.*?)$/gm, '• $1')
+                // Convert numbered lists
+                .replace(/^\d+\. (.*?)$/gm, '$&')
+                // Preserve line breaks
+                .replace(/\n/g, '\n');
+            
+            return formatted;
+        }
+        
+        function showTypingIndicator() {
+            $('#typingIndicator').show();
+            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+        }
+        
+        function hideTypingIndicator() {
+            $('#typingIndicator').hide();
+        }
+        
+        function loadChatHistory() {
+            $('#chatMessages').empty();
+            chatHistory.forEach(msg => {
+                addMessageToDisplay(msg.role, msg.content);
+            });
+        }
+        
+        function addMessageToDisplay(role, content) {
+            const messagesContainer = $('#chatMessages');
+            const messageClass = role === 'user' ? 'ml-auto bg-amber-600 text-white' : 'mr-auto bg-gray-200 text-gray-800';
+            const iconClass = role === 'user' ? 'bi-person-fill' : 'bi-robot';
+            
+            const formattedContent = formatMessageContent(content);
+            
+            const messageHtml = `
+                <div class="flex ${role === 'user' ? 'justify-end' : 'justify-start'} items-start space-x-2">
+                    ${role === 'model' ? `<div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="bi ${iconClass} text-white text-sm"></i></div>` : ''}
+                    <div class="message-bubble ${messageClass} rounded-lg px-4 py-3 shadow max-w-md">
+                        <div class="text-sm whitespace-pre-line">${formattedContent}</div>
+                    </div>
+                    ${role === 'user' ? `<div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="bi ${iconClass} text-white text-sm"></i></div>` : ''}
+                </div>
+            `;
+            
+            messagesContainer.append(messageHtml);
+        }
+        
+        // Extract customer information from user message
+        function extractCustomerInfo(message) {
+            const lowerMessage = message.toLowerCase();
+            let extractedInfo = {};
+            
+            // Try to extract phone number (Indonesian format)
+            const phoneMatch = message.match(/(?:08[0-9]{8,11}|62[0-9]{9,12}|\+62[0-9]{9,12})/);
+            if (phoneMatch) {
+                extractedInfo.no_hp_pelanggan = phoneMatch[0];
+            }
+            
+            // Try to extract name (simple heuristic - look for words after "nama saya" or similar)
+            const namePatterns = [
+                /nama\s+saya\s+([a-zA-Z\s]+)/i,
+                /saya\s+([a-zA-Z\s]+)/i,
+                /namanya\s+([a-zA-Z\s]+)/i
+            ];
+            
+            for (const pattern of namePatterns) {
+                const nameMatch = message.match(pattern);
+                if (nameMatch && nameMatch[1].trim().length > 1) {
+                    // Clean up the name (remove extra words)
+                    let name = nameMatch[1].trim();
+                    // Remove common words that might be captured
+                    name = name.replace(/\b(mau|ingin|pesan|order|dan|dengan|hp|nomor|no)\b/gi, '').trim();
+                    if (name.length > 1) {
+                        extractedInfo.nama_pelanggan = name;
+                        break;
+                    }
+                }
+            }
+            
+            return extractedInfo;
+        }
+        
+        // API functions
+        async function saveChatToDatabase(role, content) {
+            try {
+                const response = await fetch(`${SUPABASE_BASE_URL}/chat-sesi`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'x-client-info': 'supabase-js-web'
+                    },
+                    body: JSON.stringify({
+                        sesi: sessionUuid,
+                        role: role,
+                        isi: content
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    console.error('Failed to save chat to database:', result);
+                } else {
+                    console.log('Chat saved successfully:', result);
+                }
+            } catch (error) {
+                console.error('Error saving chat to database:', error);
+            }
+        }
+        
+        async function callFunction(functionName, parameters = {}) {
+            try {
+                let url = `${SUPABASE_BASE_URL}/end-point/${functionName}`;
+                let options = {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                };
+                
+                if (functionName === 'createTransaksi' || functionName === 'addItemToTransaksi') {
+                    options.method = 'POST';
+                    
+                    // For createTransaksi, ensure we include the total field
+                    if (functionName === 'createTransaksi') {
+                        // Set initial total to 0 for new transactions
+                        parameters.total = parameters.total || 0;
+                    }
+                    
+                    // For addItemToTransaksi, ensure we use the current transaction ID
+                    if (functionName === 'addItemToTransaksi' && !parameters.transaksi_id && currentTransactionId) {
+                        parameters.transaksi_id = currentTransactionId;
+                    }
+                    
+                    options.body = JSON.stringify(parameters);
+                    console.log('Sending POST request:', {
+                        url: url,
+                        body: parameters
+                    });
+                } else if (functionName === 'getTransaksi' && parameters.id) {
+                    url += `?id=${parameters.id}`;
+                }
+                
+                const response = await fetch(url, options);
+                
+                // Log response details
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                // Get response text first to see what we're actually receiving
+                const responseText = await response.text();
+                console.log('Raw response text:', responseText);
+                
+                // Try to parse as JSON
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('JSON parse error:', parseError);
+                    console.error('Response text that failed to parse:', responseText);
+                    
+                    // Return error object with the raw response
+                    return { 
+                        error: 'Invalid JSON response', 
+                        rawResponse: responseText,
+                        status: response.status
+                    };
+                }
+                
+                // Check if response was successful
+                if (!response.ok) {
+                    console.error('API Error:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        result: result
+                    });
+                    return { 
+                        error: result.message || result.error || 'API request failed',
+                        status: response.status,
+                        details: result
+                    };
+                }
+                
+                return result;
+            } catch (error) {
+                console.error(`Error calling ${functionName}:`, error);
+                return { error: error.message };
+            }
+        }
+        
+        async function sendToGemini(userMessage) {
+            showTypingIndicator();
+            
+            try {
+                // Extract customer information from the message
+                const extractedCustomerInfo = extractCustomerInfo(userMessage);
+                if (extractedCustomerInfo.nama_pelanggan || extractedCustomerInfo.no_hp_pelanggan) {
+                    customerData = { ...customerData, ...extractedCustomerInfo };
+                    saveSessionData();
+                    console.log('Updated customer data:', customerData);
+                }
+                
+                // Prepare conversation history for Gemini
+                const systemPrompt = `Kamu adalah chatbot kasir bernama Elsa di sebuah coffee shop Lofe-Coffee. Tugasmu: menampilkan produk, membuat transaksi baru, menambah item, dan menghapus transaksi. 
+
+PENTING: 
+- Untuk membuat transaksi baru, kamu HARUS memiliki nama pelanggan dan nomor HP. Jika informasi ini belum lengkap, minta pelanggan untuk memberikan keduanya terlebih dahulu.
+- ID transaksi saat ini: ${currentTransactionId || 'Belum ada'}
+- Jika sudah ada transaksi aktif, gunakan ID transaksi tersebut untuk menambahkan item.
+- Jangan membuat transaksi baru jika sudah ada transaksi aktif, kecuali diminta eksplisit.
+
+Selalu sapa pelanggan yang datang, perkenalkan dirimu sebagai Elsa, dan gunakan function call beserta responsnya jika memungkinkan. Jawaban harus singkat, ramah, dan jelas.`;
+
+                const contents = [
+                    {
+                        "role": "user",
+                        "parts": [{"text": systemPrompt}]
+                    },
+                    {
+                        "role": "model",
+                        "parts": [{"text": "Halo! Selamat datang di Lofe-Coffee. Saya Elsa, chatbot kasir Anda. Ada yang bisa saya bantu?"}]
+                    }
+                ];
+                
+                // Add chat history
+                chatHistory.forEach(msg => {
+                    contents.push({
+                        role: msg.role,
+                        parts: [{"text": msg.content}]
+                    });
+                });
+                
+                // Add current customer and transaction context
+                let contextMessage = "";
+                if (customerData) {
+                    contextMessage += "Informasi pelanggan saat ini: ";
+                    if (customerData.nama_pelanggan) contextMessage += `Nama: ${customerData.nama_pelanggan}, `;
+                    if (customerData.no_hp_pelanggan) contextMessage += `HP: ${customerData.no_hp_pelanggan}. `;
+                }
+                if (currentTransactionId) {
+                    contextMessage += `ID transaksi aktif: ${currentTransactionId}. Gunakan ID ini untuk menambahkan item.`;
+                }
+                
+                if (contextMessage) {
+                    contents.push({
+                        role: "user",
+                        parts: [{"text": contextMessage}]
+                    });
+                }
+                
+                const requestBody = {
+                    contents: contents,
+                    tools: [{
+                        function_declarations: [
+                            {
+                                name: "getProduk",
+                                description: "Menampilkan semua produk atau detail produk tertentu",
+                                parameters: {
+                                    type: "object",
+                                    properties: {}
+                                }
+                            },
+                            {
+                                name: "getTransaksi",
+                                description: "Menampilkan transaksi tertentu",
+                                parameters: {
+                                    type: "object",
+                                    properties: {
+                                        id: { type: "string" }
+                                    }
+                                }
+                            },
+                            {
+                                name: "createTransaksi",
+                                description: "Membuat transaksi baru - memerlukan nama pelanggan dan nomor HP. Jangan panggil jika sudah ada transaksi aktif.",
+                                parameters: {
+                                    type: "object",
+                                    properties: {
+                                        nama_pelanggan: { 
+                                            type: "string",
+                                            description: "Nama lengkap pelanggan"
+                                        },
+                                        no_hp_pelanggan: { 
+                                            type: "string",
+                                            description: "Nomor HP pelanggan"
+                                        },
+                                        total: {
+                                            type: "number",
+                                            description: "Total transaksi, defaultnya 0 untuk transaksi baru"
+                                        }
+                                    },
+                                    required: ["nama_pelanggan", "no_hp_pelanggan", "total"]
+                                }
+                            },
+                            {
+                                name: "addItemToTransaksi",
+                                description: "Menambahkan produk ke transaksi yang sudah ada",
+                                parameters: {
+                                    type: "object",
+                                    properties: {
+                                        transaksi_id: { 
+                                            type: "string",
+                                            description: "ID transaksi yang sudah ada"
+                                        },
+                                        produk_id: { 
+                                            type: "string",
+                                            description: "ID produk yang akan ditambahkan"
+                                        },
+                                        jumlah: { 
+                                            type: "number",
+                                            description: "Jumlah produk"
+                                        },
+                                        harga: { 
+                                            type: "number",
+                                            description: "Harga per unit produk"
+                                        }
+                                    },
+                                    required: ["transaksi_id", "produk_id", "jumlah", "harga"]
+                                }
+                            }
+                        ]
+                    }]
+                };
+                
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-goog-api-key': GEMINI_API_KEY
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const data = await response.json();
+                hideTypingIndicator();
+                
+                if (data.candidates && data.candidates[0]) {
+                    const candidate = data.candidates[0];
+                    
+                    // Handle function calls
+                    if (candidate.content.parts) {
+                        let hasFunctionCall = false;
+                        let functionResults = [];
+                        
+                        for (const part of candidate.content.parts) {
+                            if (part.functionCall) {
+                                hasFunctionCall = true;
+                                console.log('Calling function:', part.functionCall.name, 'with args:', part.functionCall.args);
+                                
+                                let functionArgs = part.functionCall.args || {};
+                                
+                                // For createTransaksi, use stored customer data if available
+                                if (part.functionCall.name === 'createTransaksi') {
+                                    // Check if there's already an active transaction
+                                    if (currentTransactionId) {
+                                        addMessage('model', `Anda sudah memiliki transaksi aktif (ID: ${currentTransactionId}). Silakan tambahkan item atau selesaikan transaksi ini terlebih dahulu.`);
+                                        await saveChatToDatabase('model', `Anda sudah memiliki transaksi aktif (ID: ${currentTransactionId}). Silakan tambahkan item atau selesaikan transaksi ini terlebih dahulu.`);
+                                        continue;
+                                    }
+                                    
+                                    if (customerData) {
+                                        functionArgs = {
+                                            ...functionArgs,
+                                            ...customerData,
+                                            total: 0 // Start with 0 total for new transactions
+                                        };
+                                    }
+                                    
+                                    // Validate required fields
+                                    if (!functionArgs.nama_pelanggan || !functionArgs.no_hp_pelanggan) {
+                                        addMessage('model', 'Maaf, saya perlu nama lengkap dan nomor HP Anda untuk membuat pesanan. Mohon berikan informasi tersebut terlebih dahulu.');
+                                        await saveChatToDatabase('model', 'Maaf, saya perlu nama lengkap dan nomor HP Anda untuk membuat pesanan. Mohon berikan informasi tersebut terlebih dahulu.');
+                                        continue;
+                                    }
+                                }
+                                
+                                // For addItemToTransaksi, ensure we have transaction ID
+                                if (part.functionCall.name === 'addItemToTransaksi') {
+                                    if (!functionArgs.transaksi_id && currentTransactionId) {
+                                        functionArgs.transaksi_id = currentTransactionId;
+                                    }
+                                    
+                                    if (!functionArgs.transaksi_id) {
+                                        addMessage('model', 'Belum ada transaksi aktif. Silakan buat transaksi baru terlebih dahulu dengan memberikan nama dan nomor HP Anda.');
+                                        await saveChatToDatabase('model', 'Belum ada transaksi aktif. Silakan buat transaksi baru terlebih dahulu dengan memberikan nama dan nomor HP Anda.');
+                                        continue;
+                                    }
+                                }
+                                
+                                const functionResult = await callFunction(
+                                    part.functionCall.name, 
+                                    functionArgs
+                                );
+                                
+                                console.log('Function result:', functionResult);
+                                
+                                // Check if function call resulted in error
+                                if (functionResult.error) {
+                                    addMessage('model', `Maaf, terjadi kesalahan: ${functionResult.error}`);
+                                    await saveChatToDatabase('model', `Maaf, terjadi kesalahan: ${functionResult.error}`);
+                                    continue;
+                                }
+                                
+                                // If creating transaction, save the ID
+                                if (part.functionCall.name === 'createTransaksi' && functionResult.id) {
+                                    currentTransactionId = functionResult.id;
+                                    currentOrderTotal = 0;
+                                    saveSessionData();
+                                    console.log('Transaction created with ID:', currentTransactionId);
+                                }
+                                
+                                // If adding item to transaction, update order data
+                                if (part.functionCall.name === 'addItemToTransaksi' && functionResult.id) {
+                                    // Add to local order items for tracking
+                                    const newItem = {
+                                        id: functionResult.id,
+                                        produk_id: functionArgs.produk_id,
+                                        jumlah: functionArgs.jumlah,
+                                        harga: functionArgs.harga,
+                                        subtotal: functionArgs.jumlah * functionArgs.harga
+                                    };
+                                    orderItems.push(newItem);
+                                    currentOrderTotal += newItem.subtotal;
+                                    saveSessionData();
+                                    console.log('Item added to transaction:', newItem);
+                                }
+                                
+                                // Store function result for processing
+                                functionResults.push({
+                                    name: part.functionCall.name,
+                                    result: functionResult
+                                });
+                                
+                            } else if (part.text) {
+                                addMessage('model', part.text);
+                                await saveChatToDatabase('model', part.text);
+                            }
+                        }
+                        
+                        // If there were function calls, send results back to Gemini for processing
+                        if (hasFunctionCall && functionResults.length > 0) {
+                            await processGeminiFunctionResults(functionResults);
+                        }
+                        
+                        // Update order summary if needed
+                        updateOrderSummary();
+                    }
+                } else {
+                    addMessage('model', 'Maaf, terjadi kesalahan. Silakan coba lagi.');
+                }
+                
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Error calling Gemini API:', error);
+                addMessage('model', 'Maaf, terjadi kesalahan koneksi. Silakan coba lagi.');
+            }
+        }
+        
+        async function processGeminiFunctionResults(functionResults) {
+            showTypingIndicator();
+            
+            try {
+                // Create a simple prompt with function results
+                let promptText = "Berdasarkan hasil function call berikut, berikan respons yang ramah dan mudah dibaca:\n\n";
+                
+                functionResults.forEach(funcResult => {
+                    promptText += `Function: ${funcResult.name}\n`;
+                    promptText += `Result: ${JSON.stringify(funcResult.result, null, 2)}\n\n`;
+                });
+                
+                promptText += "Format hasil dengan rapi, gunakan bullet points untuk daftar produk, dan berikan respons yang ramah sebagai kasir Elsa di Lofe-Coffee. Jika berhasil membuat transaksi, beri tahu pelanggan bahwa transaksi telah dibuat dan mereka bisa mulai memesan item. Jika berhasil menambah item, konfirmasi item yang ditambahkan dan total sementara.";
+                
+                const contents = [
+                    {
+                        "role": "user",
+                        "parts": [{"text": promptText}]
+                    }
+                ];
+                
+                const requestBody = {
+                    contents: contents
+                };
+                
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-goog-api-key': GEMINI_API_KEY
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const data = await response.json();
+                hideTypingIndicator();
+                
+                console.log('Gemini response:', data);
+                
+                if (data.candidates && data.candidates[0] && data.candidates[0].content.parts) {
+                    for (const part of data.candidates[0].content.parts) {
+                        if (part.text) {
+                            addMessage('model', part.text);
+                            await saveChatToDatabase('model', part.text);
+                        }
+                    }
+                } else if (data.error) {
+                    console.error('Gemini API error:', data.error);
+                    addMessage('model', 'Maaf, terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi.');
+                } else {
+                    addMessage('model', 'Maaf, terjadi kesalahan saat memproses data. Silakan coba lagi.');
+                }
+                
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Error processing function results:', error);
+                addMessage('model', 'Maaf, terjadi kesalahan saat memproses data. Silakan coba lagi.');
+            }
+        }
+        
+        function updateOrderSummary() {
+            let orderHtml = `<p>ID Sesi: <span class="font-mono text-xs">${sessionUuid || 'Tidak ada'}</span></p>`;
+            
+            if (customerData) {
+                orderHtml += `<div class="mt-2 p-2 bg-amber-50 rounded">`;
+                orderHtml += `<p class="text-xs font-semibold text-amber-800">Data Pelanggan:</p>`;
+                if (customerData.nama_pelanggan) {
+                    orderHtml += `<p class="text-xs">Nama: ${customerData.nama_pelanggan}</p>`;
+                }
+                if (customerData.no_hp_pelanggan) {
+                    orderHtml += `<p class="text-xs">HP: ${customerData.no_hp_pelanggan}</p>`;
+                }
+                orderHtml += `</div>`;
+            }
+            
+            if (currentTransactionId) {
+                orderHtml += `<div class="mt-2 p-2 bg-green-50 rounded">`;
+                orderHtml += `<p class="text-xs font-semibold text-green-800">Transaksi Aktif:</p>`;
+                orderHtml += `<p class="text-xs">ID: <span class="font-mono">${currentTransactionId}</span></p>`;
+                orderHtml += `<p class="text-xs">Total Item: ${orderItems.length}</p>`;
+                orderHtml += `<p class="text-xs">Total Harga: Rp ${currentOrderTotal.toLocaleString('id-ID')}</p>`;
+                orderHtml += `</div>`;
+                
+                if (orderItems.length > 0) {
+                    orderHtml += `<div class="mt-2">`;
+                    orderHtml += `<p class="text-xs font-semibold text-gray-700">Item dalam pesanan:</p>`;
+                    orderItems.forEach((item, index) => {
+                        orderHtml += `<div class="order-item mt-1 p-2 bg-gray-50 rounded text-xs">`;
+                        orderHtml += `<p>Item ${index + 1}: ${item.jumlah}x - Rp ${item.subtotal.toLocaleString('id-ID')}</p>`;
+                        orderHtml += `</div>`;
+                    });
+                    orderHtml += `</div>`;
+                }
+                
+                orderHtml += `<div class="mt-3 flex space-x-2">`;
+                orderHtml += `<button onclick="showTransactionDetails()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1 rounded">Lihat Detail</button>`;
+                orderHtml += `<button onclick="clearCurrentTransaction()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded">Hapus Transaksi</button>`;
+                orderHtml += `</div>`;
+            } else {
+                orderHtml += `<p class="mt-2">Belum ada transaksi aktif</p>`;
+            }
+            
+            $('#orderDetails').html(orderHtml);
+        }
+        
+        // Function to show transaction details
+        async function showTransactionDetails() {
+            if (currentTransactionId) {
+                const result = await callFunction('getTransaksi', { id: currentTransactionId });
+                if (result.id) {
+                    let detailText = `**Detail Transaksi ${result.nama_pelanggan}:**\n\n`;
+                    detailText += `ID: ${result.id}\n`;
+                    detailText += `Total: Rp ${result.total.toLocaleString('id-ID')}\n`;
+                    detailText += `Status: ${result.status}\n`;
+                    detailText += `Tanggal: ${new Date(result.created_at).toLocaleString('id-ID')}\n\n`;
+                    
+                    if (result.item_transaksi && result.item_transaksi.length > 0) {
+                        detailText += "**Item yang dipesan:**\n";
+                        result.item_transaksi.forEach((item, index) => {
+                            detailText += `${index + 1}. ${item.produk.nama} x${item.jumlah} = Rp ${(item.harga * item.jumlah).toLocaleString('id-ID')}\n`;
+                        });
+                    } else {
+                        detailText += "Belum ada item dalam pesanan ini.\n";
+                    }
+                    
+                    addMessage('model', detailText);
+                    await saveChatToDatabase('model', detailText);
+                } else {
+                    addMessage('model', 'Tidak dapat memuat detail transaksi. Silakan coba lagi.');
+                    await saveChatToDatabase('model', 'Tidak dapat memuat detail transaksi. Silakan coba lagi.');
+                }
+            }
+        }
+        
+        // Function to clear current transaction
+        function clearCurrentTransaction() {
+            if (confirm('Apakah Anda yakin ingin menghapus transaksi aktif ini?')) {
+                currentTransactionId = null;
+                currentOrderTotal = 0;
+                orderItems = [];
+                saveSessionData();
+                updateOrderSummary();
+                
+                addMessage('model', 'Transaksi telah dihapus. Anda dapat membuat transaksi baru kapan saja.');
+                saveChatToDatabase('model', 'Transaksi telah dihapus. Anda dapat membuat transaksi baru kapan saja.');
+            }
+        }
+        
+        // Event handlers
+        $(document).ready(function() {
+            // Load session data on page load
+            loadSessionData();
+            
+            // Show resume session button if there's a previous session
+            if (hasPreviousSession()) {
+                $('#resumeSessionContainer').removeClass('hidden');
+            }
+            
+            // New Order button
+            $('#newOrderBtn').click(function() {
+                // Clear previous session
+                clearSession();
+                
+                // Start new session
+                sessionUuid = generateUUID();
+                currentTransactionId = null;
+                customerData = null;
+                currentOrderTotal = 0;
+                orderItems = [];
+                chatHistory = [];
+                
+                saveSessionData();
+                
+                $('#sessionId').text(sessionUuid);
+                $('#welcomeSection').fadeOut(300, function() {
+                    $('#chatSection').removeClass('hidden').hide().fadeIn(300);
+                });
+                
+                // Add welcome message
+                setTimeout(() => {
+                    addMessage('model', 'Halo! Selamat datang di Lofe-Coffee. Saya Elsa, chatbot kasir Anda. Ada yang bisa saya bantu?');
+                    saveChatToDatabase('model', 'Halo! Selamat datang di Lofe-Coffee. Saya Elsa, chatbot kasir Anda. Ada yang bisa saya bantu?');
+                    
+                    // Show available options
+                    setTimeout(() => {
+                        addMessage('model', 'Untuk memulai, saya bisa:\n• Menampilkan menu produk\n• Membuat pesanan baru\n• Menambah item ke pesanan\n\nKetik "menu" untuk melihat daftar produk, atau beritahu nama dan nomor HP Anda untuk membuat pesanan baru! 😊');
+                        saveChatToDatabase('model', 'Untuk memulai, saya bisa:\n• Menampilkan menu produk\n• Membuat pesanan baru\n• Menambah item ke pesanan\n\nKetik "menu" untuk melihat daftar produk, atau beritahu nama dan nomor HP Anda untuk membuat pesanan baru! 😊');
+                    }, 1000);
+                }, 500);
+                
+                updateOrderSummary();
+            });
+            
+            // Resume Session button
+            $('#resumeSessionBtn').click(function() {
+                if (sessionUuid) {
+                    $('#sessionId').text(sessionUuid);
+                    $('#welcomeSection').fadeOut(300, function() {
+                        $('#chatSection').removeClass('hidden').hide().fadeIn(300);
+                    });
+                    
+                    // Load chat history
+                    loadChatHistory();
+                    
+                    // Add resume message
+                    setTimeout(() => {
+                        addMessage('model', 'Sesi Anda telah dilanjutkan. Ada yang bisa saya bantu lagi?');
+                        saveChatToDatabase('model', 'Sesi Anda telah dilanjutkan. Ada yang bisa saya bantu lagi?');
+                    }, 500);
+                    
+                    updateOrderSummary();
+                }
+            });
+            
+            // Clear Transaction button
+            $('#clearTransactionBtn').click(function() {
+                clearCurrentTransaction();
+            });
+            
+            // Back button
+            $('#backBtn').click(function() {
+                $('#chatSection').fadeOut(300, function() {
+                    $('#welcomeSection').fadeIn(300);
+                    
+                    // Show resume button if there's still session data
+                    if (hasPreviousSession()) {
+                        $('#resumeSessionContainer').removeClass('hidden');
+                    }
+                });
+            });
+            
+            // Send message
+            function sendMessage() {
+                const message = $('#messageInput').val().trim();
+                if (message) {
+                    addMessage('user', message);
+                    saveChatToDatabase('user', message);
+                    $('#messageInput').val('');
+                    
+                    // Send to Gemini
+                    sendToGemini(message);
+                }
+            }
+            
+            $('#sendBtn').click(sendMessage);
+            
+            $('#messageInput').keypress(function(e) {
+                if (e.which === 13) {
+                    sendMessage();
+                }
+            });
+            
+            // Ensure we start with welcome section visible
+            $('#chatSection').addClass('hidden');
+            $('#welcomeSection').show();
+        });
+        
+        // Make functions available globally
+        window.showTransactionDetails = showTransactionDetails;
+        window.clearCurrentTransaction = clearCurrentTransaction;
+    </script>
+</body>
+</html>
